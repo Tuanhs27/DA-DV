@@ -1,7 +1,6 @@
 import matplotlib
 # Su dung QtAgg de hien thi cua so bieu do dang pop-up tren moi truong Linux/Fedora
 matplotlib.use('QtAgg')
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,18 +16,16 @@ warnings.filterwarnings('ignore')
 # Thiet lap giao dien bieu do mac dinh cua Seaborn
 sns.set_theme(style="whitegrid")
 
-# ==========================================
+
 # 1. DOC VA TIEN XU LY DU LIEU (LAM SACH)
-# ==========================================
 df = pd.read_csv('data.csv')
 
 # Dem so luong gia tri thieu va trung lap truoc khi lam sach
 missing_counts = df.isnull().sum()
 dup_count = df.duplicated().sum()
-
 # Dien so 0 vao cac o thieu cua cot thoi gian hoc
 df['avg_session_minutes'] = df['avg_session_minutes'].fillna(0)
-# Xoa cac dong khong co user_id (du lieu rac)
+# Xoa cac dong khong co user_id (du lieu rac)   
 df = df.dropna(subset=['user_id'])
 # Xoa cac dong trung lap neu co
 if dup_count > 0:
@@ -38,17 +35,13 @@ df = df[df['avg_session_minutes'] >= 0]
 
 unique_count = len(df)
 
-# ==========================================
 # 2. LAY MAU DU LIEU (SAMPLING) DE TOI UU HIEU NANG
-# ==========================================
 # Lay 100k dong de ve bieu do chung (tranh treo may do RAM qua tai khi load 10 trieu dong)
 df_plot = df.sample(n=100000, random_state=42) if len(df) > 100000 else df
 # Lay 10k dong chuyen de chay thuat toan Machine Learning (K-Means)
 df_cluster = df.sample(n=10000, random_state=42) if len(df) > 10000 else df
 
-# ==========================================
 # 3. TINH TOAN CAC GIA TRI BAT THUONG (OUTLIERS)
-# ==========================================
 # Su dung phan vi 99% (Top 1%) de tim tap khach hang dac biet
 threshold_study = df['avg_session_minutes'].quantile(0.99)
 hardcore_learners = df[df['avg_session_minutes'] > threshold_study]
@@ -60,15 +53,16 @@ ghost_users = df[(df['courses_enrolled'] >= 3) & (df['avg_session_minutes'] == 0
 threshold_spend = df['total_spent_usd'].quantile(0.99)
 whales = df[df['total_spent_usd'] > threshold_spend]
 
-# ==========================================
 # 4. IN BAO CAO TEXT RA TERMINAL
-# ==========================================
 print("="*60)
 print("BAO CAO DU LIEU TU DONG")
 print("="*60)
 print(f"1. Kich thuoc du lieu chuan: {df.shape[0]} dong, {df.shape[1]} cot.")
 print(f"2. Tong so gia tri thieu: {missing_counts.sum()}")
 print(f"3. Tong so ban ghi trung lap: {dup_count}")
+print("- nguon du lieu: He thong noi bo cua nen tang hoc truc tuyen LearnX")
+print(f"- so luong ban ghi: {df.shape[0]}")
+print("- cac thuoc tinh chinh: avg_session_minutes, sessions_per_week, completion_rate, courses_enrolled, total_spent_usd")
 
 print("\n4. KHOANG GIA TRI BAT THUONG (IQR BOUNDS):")
 cols_to_check = ['avg_session_minutes', 'courses_enrolled', 'total_spent_usd']
@@ -90,9 +84,7 @@ print(f"- nguoi dung dang ky nhieu khoa nhung khong hoc: {len(ghost_users)} nguo
 print(f"- nguoi dung chi tieu bat thuong (>{threshold_spend:.2f} USD): {len(whales)} nguoi")
 print("="*60)
 
-# ==========================================
 # 5. VE BIEU DO GIAI DOAN 1 (TONG QUAN & OUTLIERS)
-# ==========================================
 # Bieu do 1: Kiem tra chat luong du lieu (Thieu & Trung lap)
 fig1, axes1 = plt.subplots(1, 2, figsize=(15, 6))
 sns.barplot(y=missing_counts.index, x=missing_counts.values, ax=axes1[0], hue=missing_counts.index, legend=False, palette='Reds_r')
@@ -134,9 +126,7 @@ axes3[2].set_title('Gia tri bat thuong: Chi tieu (USD)')
 plt.tight_layout()
 plt.show(block=False)
 
-# ==========================================
 # 6. VE BIEU DO GIAI DOAN 2 (AI PHAN CUM K-MEANS)
-# ==========================================
 # Bieu do 4: Xem xet moi quan he giua cac bien trươc khi dua vao AI
 fig4, axes4 = plt.subplots(1, 3, figsize=(18, 5))
 sns.scatterplot(data=df_cluster, x='avg_session_minutes', y='completion_rate', alpha=0.5, ax=axes4[0], color='blue')
@@ -179,7 +169,12 @@ plt.title("Dendrogram (Cau truc nhom hanh vi)")
 plt.xlabel("Nguoi dung (Index)")
 plt.ylabel("Khoang cach")
 plt.show(block=False)
+"""
+Tổng kích thước dữ liệu: Tập dữ liệu data.csv có chứa chính xác 10.000.000 (10 triệu) dòng, tương ứng với 10 triệu người dùng.
 
+Thuật toán định nghĩa "Sự bất thường": Trong code, ta đã sử dụng hàm tính toán .quantile(0.99). Lệnh này mang ý nghĩa thống kê là: "Hãy tìm ra mốc giá trị để chia tách Top 1% những người cao nhất so với 99% những người bình thường còn lại".
+
+Phép toán cơ bản: Theo toán học, 1% của 10.000.000 chính là bằng đúng 100.000."""
 # Bieu do 7: Radar Chart (Bieu do mang nhen) de thay ro diem manh/yeu cua tung nhom
 N = len(features)
 angles = [n / float(N) * 2 * np.pi for n in range(N)]
